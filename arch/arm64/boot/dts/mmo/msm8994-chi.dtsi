@@ -28,6 +28,7 @@
 #include "common/reserved-memory.dtsi"
 #include "common/regulator.dtsi"
 #include "common/gpios.dtsi"
+#include "common/torch.dtsi"
 
 &mdss_mdp {
 	qcom,mdss-pref-prim-intf = "dsi";
