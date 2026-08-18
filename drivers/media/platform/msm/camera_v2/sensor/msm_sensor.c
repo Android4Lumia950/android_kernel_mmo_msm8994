@@ -663,7 +663,7 @@ long msm_sensor_subdev_fops_ioctl(struct file *file,
 	return video_usercopy(file, cmd, arg, msm_sensor_subdev_do_ioctl);
 }
 
-static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
+int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 	void __user *argp)
 {
 	struct sensorb_cfg_data32 *cdata = (struct sensorb_cfg_data32 *)argp;
@@ -1473,7 +1473,13 @@ int32_t msm_sensor_platform_probe(struct platform_device *pdev,
 	unsigned long mount_pos = 0;
 	s_ctrl->pdev = pdev;
 	CDBG("%s called data %pK\n", __func__, data);
-	CDBG("%s pdev name %s\n", __func__, pdev->id_entry->name);
+	/* DT pdevs have id_entry == NULL; pr_debug still evaluates args. */
+	pr_err("%s: %s\n", __func__, dev_name(&pdev->dev));
+	if (!msm_cci_get_subdev()) {
+		pr_err("%s: CCI not ready, deferring %s\n",
+			__func__, dev_name(&pdev->dev));
+		return -EPROBE_DEFER;
+	}
 	if (pdev->dev.of_node) {
 		rc = msm_sensor_get_dt_data(pdev->dev.of_node, s_ctrl);
 		if (rc < 0) {
@@ -1515,17 +1521,11 @@ int32_t msm_sensor_platform_probe(struct platform_device *pdev,
 		sizeof(cam_8974_clk_info));
 	s_ctrl->sensordata->power_info.clk_info_size =
 		ARRAY_SIZE(cam_8974_clk_info);
-	rc = s_ctrl->func_tbl->sensor_power_up(s_ctrl);
-	if (rc < 0) {
-		pr_err("%s %s power up failed\n", __func__,
-			s_ctrl->sensordata->sensor_name);
-		kfree(s_ctrl->sensordata->power_info.clk_info);
-		kfree(cci_client);
-		return rc;
-	}
-
-	pr_info("%s %s probe succeeded\n", __func__,
-		s_ctrl->sensordata->sensor_name);
+	/* Do not power_up at boot. qcamera will s_power() later.
+	 * Boot-time power_up/down reboots talkman (kernels smia-msm #1-#3).
+	 */
+	pr_err("%s %s probe register-only (SMIA++ power deferred to qcamera)\n",
+		__func__, s_ctrl->sensordata->sensor_name);
 	v4l2_subdev_init(&s_ctrl->msm_sd.sd,
 		s_ctrl->sensor_v4l2_subdev_ops);
 	snprintf(s_ctrl->msm_sd.sd.name,
@@ -1554,13 +1554,12 @@ int32_t msm_sensor_platform_probe(struct platform_device *pdev,
 	msm_sensor_v4l2_subdev_fops.compat_ioctl32 =
 		msm_sensor_subdev_fops_ioctl;
 #endif
-	s_ctrl->msm_sd.sd.devnode->fops =
-		&msm_sensor_v4l2_subdev_fops;
+	if (s_ctrl->msm_sd.sd.devnode)
+		s_ctrl->msm_sd.sd.devnode->fops =
+			&msm_sensor_v4l2_subdev_fops;
 
-	CDBG("%s:%d\n", __func__, __LINE__);
-
-	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
-	CDBG("%s:%d\n", __func__, __LINE__);
+	pr_err("%s:%d registered without boot power_up/down\n",
+		__func__, __LINE__);
 	return rc;
 }
 

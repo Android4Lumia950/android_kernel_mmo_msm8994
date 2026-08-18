@@ -1,0 +1,117 @@
+/*
+ * talkman cameras — SMIA++ MSM sensor (smiapp ident).
+ *
+ * msm-cci.txt: `reg` is the I2C slave address (8-bit, as Qualcomm uses it).
+ * Node names are cam0@0 / cam1@1 / cam2@2 (camera index, snaccy cam@N).
+ * of_device_make_bus_id is "$reg.$name"; the two 0x20 slaves cannot both
+ * be named "cam" or they both become sysfs 20.cam.
+ *
+ * ACPI: Hill CAMS CCI1 CSI0 GPIO 13/92/91 L25/L29/LVS1;
+ *       Front CAMF CCI0 CSI2 GPIO 15/104/105 L17/LVS1;
+ *       Iris CAMT CCI0 CSI3 GPIO 14/102/106 L17/L3/LVS1. Iris 8-bit 0x6C.
+ *
+ * cam_vio is PM8994 LVS1 (shared 1.8V). Ident may enable it; never
+ * regulator_disable / msm_sensor_power_down that rail (reboots talkman).
+ * No qcom,camera on the same CCI/GPIOs. Do not bind nokia,smia as a second
+ * platform driver on these children (CCI is not an i2c_adapter).
+ *
+ * Do not include msm8992-camera-sensor-mtp.dtsi with this file.
+ */
+
+&cci {
+	/* Rear PureView 20MP (Hill) — CCI master 1, CSI0, 8-bit 0x20 */
+	cam0: cam0@0 {
+		compatible = "qcom,smia65pp";
+		cell-index = <0>;
+		reg = <0x20>;
+		qcom,slave-id = <0x20 0x0000 0>;
+		qcom,csiphy-sd-index = <0>;
+		qcom,csid-sd-index = <0>;
+		qcom,mount-angle = <90>;
+		qcom,sensor-name = "imx230";
+		qcom,sensor-position = <0>;
+		qcom,sensor-mode = <0>;
+		qcom,cci-master = <1>;
+		cam_vdig-supply = <&pm8994_l25>;
+		cam_vana-supply = <&pm8994_l29>;
+		cam_vio-supply = <&pm8994_lvs1>;
+		pinctrl-names = "cam_default", "cam_suspend";
+		pinctrl-0 = <&cam_sensor_mclk0_active &cam_sensor_rear_active>;
+		pinctrl-1 = <&cam_sensor_mclk0_suspend &cam_sensor_rear_suspend>;
+		gpios = <&msm_gpio 13 0>,
+			<&msm_gpio 92 0>,
+			<&msm_gpio 91 0>;
+		/* gpio-reset is SMIA xshutdown (RST_N). Clock, then this pin. */
+		qcom,gpio-reset = <1>;
+		qcom,gpio-standby = <2>;
+		/* ACPI CAMSENSOR_1_STANBY (no _N): 0 = out of standby. */
+		qcom,standby-release = <0>;
+		clocks = <&clock_mmss clk_mclk0_clk_src>,
+			 <&clock_mmss clk_camss_mclk0_clk>;
+		clock-names = "cam_src_clk", "cam_clk";
+		status = "ok";
+	};
+
+	/* Front 5MP (Ducati) — CCI master 0, CSI2, 8-bit 0x20 */
+	cam1: cam1@1 {
+		compatible = "qcom,smia65pp";
+		cell-index = <1>;
+		reg = <0x20>;
+		qcom,slave-id = <0x20 0x0000 0>;
+		qcom,csiphy-sd-index = <2>;
+		qcom,csid-sd-index = <2>;
+		qcom,mount-angle = <90>;
+		qcom,sensor-name = "ducati";
+		qcom,sensor-position = <1>;
+		qcom,sensor-mode = <0>;
+		qcom,cci-master = <0>;
+		cam_vana-supply = <&pm8994_l17>;
+		cam_vio-supply = <&pm8994_lvs1>;
+		pinctrl-names = "cam_default", "cam_suspend";
+		pinctrl-0 = <&cam_sensor_mclk2_active &cam_sensor_front_active>;
+		pinctrl-1 = <&cam_sensor_mclk2_suspend &cam_sensor_front_suspend>;
+		gpios = <&msm_gpio 15 0>,
+			<&msm_gpio 104 0>,
+			<&msm_gpio 105 0>;
+		qcom,gpio-reset = <1>;
+		qcom,gpio-standby = <2>;
+		/* ACPI WEBCAM1_STANBY_N: 1 = out of standby. */
+		qcom,standby-release = <1>;
+		clocks = <&clock_mmss clk_mclk2_clk_src>,
+			 <&clock_mmss clk_camss_mclk2_clk>;
+		clock-names = "cam_src_clk", "cam_clk";
+		status = "ok";
+	};
+
+	/* Iris — CCI master 0, CSI3, 8-bit 0x6C (snaccy). */
+	cam2: cam2@2 {
+		compatible = "qcom,smia65pp";
+		cell-index = <2>;
+		reg = <0x6c>;
+		qcom,slave-id = <0x6c 0x0000 0>;
+		qcom,csiphy-sd-index = <1>;
+		qcom,csid-sd-index = <3>;
+		qcom,mount-angle = <90>;
+		qcom,sensor-name = "iris";
+		qcom,sensor-position = <2>;
+		qcom,sensor-mode = <0>;
+		qcom,cci-master = <0>;
+		cam_vdig-supply = <&pm8994_l3>;
+		cam_vana-supply = <&pm8994_l17>;
+		cam_vio-supply = <&pm8994_lvs1>;
+		pinctrl-names = "cam_default", "cam_suspend";
+		pinctrl-0 = <&cam_sensor_mclk1_active>;
+		pinctrl-1 = <&cam_sensor_mclk1_suspend>;
+		gpios = <&msm_gpio 14 0>,
+			<&msm_gpio 102 0>,
+			<&msm_gpio 106 0>;
+		qcom,gpio-reset = <1>;
+		qcom,gpio-standby = <2>;
+		/* ACPI CAMSENSOR_2_STANBY (no _N): 0 = out of standby. */
+		qcom,standby-release = <0>;
+		clocks = <&clock_mmss clk_mclk1_clk_src>,
+			 <&clock_mmss clk_camss_mclk1_clk>;
+		clock-names = "cam_src_clk", "cam_clk";
+		status = "ok";
+	};
+};
