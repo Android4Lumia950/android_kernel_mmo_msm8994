@@ -175,6 +175,14 @@ config OV5645
 		1280 * 270. It does not support auto focus. It supports
 		few special effects like saturation.
 
+
+config SMIA65PP
+	bool "SMIA++ sensors (talkman Hill/Ducati)"
+	depends on MSMB_CAMERA
+	---help---
+	  Nokia/QCOM wrapper for SMIA++ modules (Lumia 950 Hill rear).
+	  Do not enable CONFIG_VIDEO_SMIAPP at the same time.
+
 config OV7695
 	bool "Sensor OV7695 (YUV 0.3MP)"
 	depends on MSMB_CAMERA
