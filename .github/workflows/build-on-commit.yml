@@ -93,8 +93,8 @@ jobs:
 
       - name: Create tag for release
         run: |
-          git tag -a "Perf-kernel-$(date -u +"%Y%m%d-%H%M")" -m "Release for kernel build"
-          git push origin "Perf-kernel-$(date -u +"%Y%m%d-%H%M")"
+          git tag -a "Harmony-kernel-$(date -u +"%Y%m%d-%H%M")" -m "Release for kernel build"
+          git push origin "Harmony-kernel-$(date -u +"%Y%m%d-%H%M")"
 
       - name: Release under current commit
         run: |
@@ -105,7 +105,7 @@ jobs:
           git log --oneline --abbrev-commit ${{ github.event.before }}..${{ github.sha }} >> "${CHANGELOG_FILE}"
           echo "### Branch" >> "${CHANGELOG_FILE}"
           echo "${{ github.ref }}" >> "${CHANGELOG_FILE}"
-          gh release create "Perf-kernel-$(date -u +"%Y%m%d-%H%M")" \
+          gh release create "Harmony-kernel-$(date -u +"%Y%m%d-%H%M")" \
             -F "${CHANGELOG_FILE}" \
             ./${ANYKERNEL3_DIR}/$FINAL_ZIP
         shell: bash
