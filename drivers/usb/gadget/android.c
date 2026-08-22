@@ -40,9 +40,7 @@
 #ifdef CONFIG_SND_PCM
 #include "f_audio_source.c"
 #endif
-#ifdef CONFIG_SND_RAWMIDI
 #include "f_midi.c"
-#endif
 #include "f_mass_storage.c"
 #define USB_ETH_RNDIS y
 #include "f_diag.c"
@@ -92,10 +90,11 @@ static const char longname[] = "Gadget Android";
 #define PRODUCT_ID		0x0001
 
 #define ANDROID_DEVICE_NODE_NAME_LENGTH 11
+
 /* f_midi configuration */
 #define MIDI_INPUT_PORTS    1
 #define MIDI_OUTPUT_PORTS   1
-#define MIDI_BUFFER_SIZE    1024
+#define MIDI_BUFFER_SIZE    256
 #define MIDI_QUEUE_LENGTH   32
 
 struct android_usb_function {
@@ -473,7 +472,7 @@ static void android_work(struct work_struct *data)
 		}
 		pr_info("%s: sent uevent %s\n", __func__, uevent_envp[0]);
 	} else {
-		pr_info("%s: did not send uevent (%d %d %pK)\n", __func__,
+		pr_info("%s: did not send uevent (%d %d %p)\n", __func__,
 			 dev->connected, dev->sw_connected, cdev->config);
 	}
 }
@@ -2618,11 +2617,12 @@ static void mass_storage_function_enable(struct android_usb_function *f)
 
 		while (b) {
 			lun_type = strsep(&b, ",");
-			if (lun_type)
+			if (lun_type) {
 				number_of_luns =
 					mass_storage_lun_init(f, lun_type);
 				if (number_of_luns <= 0)
 					return;
+			}
 		}
 	} else {
 		pr_debug("No extra msc lun required.\n");
@@ -2796,8 +2796,7 @@ static ssize_t audio_source_pcm_show(struct device *dev,
 	struct audio_source_config *config = f->config;
 
 	/* print PCM card and device numbers */
-	return snprintf(buf, PAGE_SIZE,
-			"%d %d\n", config->card, config->device);
+	return sprintf(buf, "%d %d\n", config->card, config->device);
 }
 
 static DEVICE_ATTR(pcm, S_IRUGO, audio_source_pcm_show, NULL);
@@ -2863,7 +2862,6 @@ static struct android_usb_function uasp_function = {
 	.bind_config	= uasp_function_bind_config,
 };
 
-#ifdef CONFIG_SND_RAWMIDI
 static int midi_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
 {
@@ -2917,7 +2915,7 @@ static struct android_usb_function midi_function = {
 	.bind_config	= midi_function_bind_config,
 	.attributes	= midi_function_attributes,
 };
-#endif
+
 static struct android_usb_function *supported_functions[] = {
 	&ffs_function,
 	&mbim_function,
@@ -2944,11 +2942,9 @@ static struct android_usb_function *supported_functions[] = {
 #ifdef CONFIG_SND_PCM
 	&audio_source_function,
 #endif
+	&midi_function,
 	&uasp_function,
 	&charger_function,
-#ifdef CONFIG_SND_RAWMIDI
-	&midi_function,
-#endif
 	NULL
 };
 

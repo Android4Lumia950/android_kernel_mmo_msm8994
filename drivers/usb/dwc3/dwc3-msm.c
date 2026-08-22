@@ -697,14 +697,14 @@ static int dwc3_msm_ep_queue(struct usb_ep *ep,
 
 	if (!dep->endpoint.desc) {
 		dev_err(mdwc->dev,
-			"%s: trying to queue request %pK to disabled ep %s\n",
+			"%s: trying to queue request %p to disabled ep %s\n",
 			__func__, request, ep->name);
 		return -EPERM;
 	}
 
 	if (dep->number == 0 || dep->number == 1) {
 		dev_err(mdwc->dev,
-			"%s: trying to queue dbm request %pK to control ep %s\n",
+			"%s: trying to queue dbm request %p to control ep %s\n",
 			__func__, request, ep->name);
 		return -EPERM;
 	}
@@ -713,7 +713,7 @@ static int dwc3_msm_ep_queue(struct usb_ep *ep,
 	if (dep->busy_slot != dep->free_slot || !list_empty(&dep->request_list)
 					 || !list_empty(&dep->req_queued)) {
 		dev_err(mdwc->dev,
-			"%s: trying to queue dbm request %pK tp ep %s\n",
+			"%s: trying to queue dbm request %p tp ep %s\n",
 			__func__, request, ep->name);
 		return -EPERM;
 	} else {
@@ -758,7 +758,7 @@ static int dwc3_msm_ep_queue(struct usb_ep *ep,
 		return ret;
 	}
 
-	dev_vdbg(dwc->dev, "%s: queing request %pK to ep %s length %d\n",
+	dev_vdbg(dwc->dev, "%s: queing request %p to ep %s length %d\n",
 			__func__, request, ep->name, request->length);
 
 	dbm_event_buffer_config(mdwc->dbm,
@@ -975,7 +975,7 @@ EXPORT_SYMBOL(msm_dwc3_restart_usb_session);
  */
 int msm_register_usb_ext_notification(struct usb_ext_notification *info)
 {
-	pr_debug("%s usb_ext: %pK\n", __func__, info);
+	pr_debug("%s usb_ext: %p\n", __func__, info);
 
 	if (info) {
 		if (usb_ext) {
@@ -1618,15 +1618,9 @@ static int dwc3_msm_suspend(struct dwc3_msm *mdwc)
 			}
 		}
 
-		/*
-		 * Don't allow low power mode if bam pipes are still connected.
-		 * Otherwise it could lead to unclocked access when sps driver
-		 * accesses USB bam registers as part of bam pipes disconnection
-		 */
 		if (!msm_bam_usb_lpm_ok(DWC3_CTRL)) {
 			dev_dbg(mdwc->dev, "%s: IPA handshake not finished, will suspend when done\n",
 					__func__);
-			pm_schedule_suspend(mdwc->dev, 1000);
 			return -EBUSY;
 		}
 	}
@@ -2334,7 +2328,6 @@ static int dwc3_msm_power_set_property_usb(struct power_supply *psy,
 		mdwc->id_state = val->intval ? DWC3_ID_GROUND : DWC3_ID_FLOAT;
 		if (mdwc->otg_xceiv)
 			queue_work(system_nrt_wq, &mdwc->id_work);
-
 		break;
 	case POWER_SUPPLY_PROP_SCOPE:
 		mdwc->scope = val->intval;
