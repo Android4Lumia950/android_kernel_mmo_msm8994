@@ -2020,7 +2020,7 @@ again:
 	}
 
 	if (penv->notify_modem_status && wdrv->modem_status)
-		wdrv->modem_status(pdev, penv->modem_current_status);
+		wdrv->modem_status(pdev, 0);
 
 	return ret;
 
@@ -2330,7 +2330,7 @@ static int cnss_powerup(const struct subsys_desc *subsys)
 	}
 
 	if (penv->notify_modem_status && wdrv->modem_status)
-		wdrv->modem_status(pdev, penv->modem_current_status);
+		wdrv->modem_status(pdev, 0);
 
 out:
 	penv->recovery_in_progress = false;
@@ -2473,7 +2473,7 @@ static int cnss_modem_notifier_nb(struct notifier_block *this,
 	if (!wdrv || !pdev || !wdrv->modem_status)
 		return NOTIFY_DONE;
 
-	wdrv->modem_status(pdev, penv->modem_current_status);
+	wdrv->modem_status(pdev, 0);
 
 	return NOTIFY_OK;
 }
